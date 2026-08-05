@@ -1,0 +1,15 @@
+# Large generated files
+data/processed/train_features.csv
+
+# Raw datasets
+data/raw/*.csv
+data/raw/*.zip
+
+# Trained models
+models/
+
+# Results
+results/*.csv
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
