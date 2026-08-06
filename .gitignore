@@ -13,3 +13,9 @@ results/*.csv
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+
+# CatBoost logs
+notebooks/catboost_info/
+
+# Backup notebooks
+*_old.ipynb
