@@ -1,21 +1,53 @@
-# Large generated files
+# ============================================================
+# Large datasets and generated features
+# ============================================================
+
+# Raw NCI-ALMANAC dataset
+data/raw/
+
+# Large generated feature datasets
+features/
+splits/
+
+# Large processed training feature matrix
 data/processed/train_features.csv
 
-# Raw datasets
-data/raw/*.csv
-data/raw/*.zip
 
+# ============================================================
 # Trained models
+# ============================================================
+
 models/
 
-# Results
-results/*.csv
 
-# Jupyter checkpoints
+# ============================================================
+# CatBoost generated logs
+# ============================================================
+
+catboost_info/
+
+
+# ============================================================
+# Python cache
+# ============================================================
+
+__pycache__/
+*.py[cod]
+
+
+# ============================================================
+# Jupyter
+# ============================================================
+
 .ipynb_checkpoints/
-
-# CatBoost logs
-notebooks/catboost_info/
-
-# Backup notebooks
 *_old.ipynb
+
+
+# ============================================================
+# OS / editor files
+# ============================================================
+
+.DS_Store
+*.swp
+*.swo
+*~
