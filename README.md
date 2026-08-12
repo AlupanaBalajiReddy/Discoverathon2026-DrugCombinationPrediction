@@ -91,3 +91,13 @@ The prediction target is:
 
 ```text
 SCORE
+
+---
+
+# AI Assistance & Acknowledgement
+
+AI tools, including ChatGPT, were used during the development of this project for code assistance, debugging, documentation, presentation preparation, and clarification of technical concepts.
+
+All data preprocessing, experimental design, model training, evaluation, interpretation of results, and final scientific conclusions were reviewed and validated by the project team.
+
+AI tools were not used as a zero-shot prediction system for the challenge. The submitted predictions were generated using task-specific machine learning models trained on the challenge data.
