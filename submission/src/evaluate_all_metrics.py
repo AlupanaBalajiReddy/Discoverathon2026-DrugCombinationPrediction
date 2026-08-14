@@ -12,21 +12,43 @@ from sklearn.metrics import (
     balanced_accuracy_score,
     roc_auc_score,
     average_precision_score,
-    matthews_corrcoef
+    matthews_corrcoef,
 )
 
 from scipy.stats import pearsonr, spearmanr
 
 
 # ============================================================
-# DIRECTORIES
+# PROJECT DIRECTORIES
 # ============================================================
 
-FEATURES_DIR = "features"
-MODEL_DIR = "models"
-RESULTS_DIR = "results"
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        ".."
+    )
+)
 
-os.makedirs(RESULTS_DIR, exist_ok=True)
+FEATURES_DIR = os.path.join(
+    PROJECT_ROOT,
+    "features"
+)
+
+MODEL_DIR = os.path.join(
+    PROJECT_ROOT,
+    "models"
+)
+
+RESULTS_DIR = os.path.join(
+    PROJECT_ROOT,
+    "results"
+)
+
+os.makedirs(
+    RESULTS_DIR,
+    exist_ok=True
+)
 
 
 # ============================================================
@@ -37,13 +59,19 @@ SPLITS = [
     "random",
     "cold_combination",
     "cold_cell_line",
-    "cold_drug"
+    "cold_drug",
 ]
 
 
 # ============================================================
-# DATA PREPROCESSING
-# SAME LOGIC USED DURING TRAINING
+# MODEL
+# ============================================================
+
+MODEL_PREFIX = "extra_trees_depth25"
+
+
+# ============================================================
+# COLUMNS TO REMOVE
 # ============================================================
 
 LEAKAGE_COLUMNS = [
@@ -53,7 +81,7 @@ LEAKAGE_COLUMNS = [
     "TESTVALUE",
     "CONTROLVALUE",
     "TZVALUE",
-    "EXPECTEDGROWTH"
+    "EXPECTEDGROWTH",
 ]
 
 
@@ -64,16 +92,31 @@ METADATA_COLUMNS = [
     "PLATE",
     "PREFIX1",
     "PREFIX2",
-    "drug_pair_id"
+    "drug_pair_id",
 ]
 
 
-def prepare_data(df, feature_columns=None):
+# ============================================================
+# DATA PREPARATION
+# ============================================================
 
-    y = pd.to_numeric(
-        df["SCORE"],
-        errors="coerce"
-    )
+def prepare_data(
+    df,
+    feature_columns=None,
+):
+    """
+    Prepare dataframe for prediction.
+
+    The preprocessing follows the same general logic used
+    during model training:
+
+    1. Remove target/leakage columns.
+    2. Remove metadata columns.
+    3. One-hot encode categorical variables.
+    4. Convert remaining values to numeric.
+    5. Replace missing values with zero.
+    6. Reorder columns to exactly match the trained model.
+    """
 
     remove_columns = (
         LEAKAGE_COLUMNS
@@ -81,18 +124,25 @@ def prepare_data(df, feature_columns=None):
     )
 
     remove_columns = [
-        col
-        for col in remove_columns
-        if col in df.columns
+        column
+        for column in remove_columns
+        if column in df.columns
     ]
 
     X = df.drop(
         columns=remove_columns
     )
 
-    categorical_columns = X.select_dtypes(
-        include=["object", "string"]
-    ).columns.tolist()
+    categorical_columns = (
+        X.select_dtypes(
+            include=[
+                "object",
+                "string"
+            ]
+        )
+        .columns
+        .tolist()
+    )
 
     if categorical_columns:
 
@@ -100,7 +150,7 @@ def prepare_data(df, feature_columns=None):
             X,
             columns=categorical_columns,
             drop_first=False,
-            dtype="int8"
+            dtype="int8",
         )
 
     X = X.apply(
@@ -110,61 +160,116 @@ def prepare_data(df, feature_columns=None):
 
     X = X.fillna(0)
 
-    float_columns = X.select_dtypes(
-        include=["float64"]
-    ).columns
-
-    X[float_columns] = X[
-        float_columns
-    ].astype("float32")
+    # --------------------------------------------------------
+    # EXACT FEATURE ORDER FROM TRAINED MODEL
+    # --------------------------------------------------------
 
     if feature_columns is not None:
 
         X = X.reindex(
             columns=feature_columns,
-            fill_value=0
+            fill_value=0,
         )
 
-    return X, y
+    return X
 
 
 # ============================================================
-# CORRELATION
+# CORRELATION METRICS
 # ============================================================
 
-def calculate_correlations(y_true, y_pred):
+def calculate_correlations(
+    y_true,
+    y_pred,
+):
+    """
+    Calculate Pearson and Spearman correlations.
+    """
 
-    pearson = pearsonr(
+    y_true = np.asarray(
         y_true,
-        y_pred
-    ).statistic
+        dtype=float
+    )
 
-    spearman = spearmanr(
-        y_true,
-        y_pred
-    ).statistic
+    y_pred = np.asarray(
+        y_pred,
+        dtype=float
+    )
 
-    return pearson, spearman
+    # Pearson
+    try:
+
+        pearson = pearsonr(
+            y_true,
+            y_pred
+        ).statistic
+
+    except Exception:
+
+        pearson = np.nan
+
+    # Spearman
+    try:
+
+        spearman = spearmanr(
+            y_true,
+            y_pred
+        ).statistic
+
+    except Exception:
+
+        spearman = np.nan
+
+    return (
+        pearson,
+        spearman
+    )
 
 
 # ============================================================
 # CLASSIFICATION METRICS
-#
-# Synergy hit = top 10% of TRAINING SCORE distribution
-#
-# This prevents the test set from determining its own threshold.
 # ============================================================
 
 def calculate_classification_metrics(
     y_train,
     y_test,
-    y_pred
+    y_pred,
 ):
+    """
+    Define synergy hits using the 90th percentile of the
+    TRAINING SCORE distribution.
+
+    The test set is therefore NOT used to determine its
+    own classification threshold.
+    """
+
+    y_train = np.asarray(
+        y_train,
+        dtype=float
+    )
+
+    y_test = np.asarray(
+        y_test,
+        dtype=float
+    )
+
+    y_pred = np.asarray(
+        y_pred,
+        dtype=float
+    )
+
+    # --------------------------------------------------------
+    # TRAINING-BASED THRESHOLD
+    # --------------------------------------------------------
 
     threshold = np.quantile(
         y_train,
         0.90
     )
+
+    # --------------------------------------------------------
+    # TRUE / PREDICTED CLASSES
+    # --------------------------------------------------------
 
     y_true_binary = (
         y_test >= threshold
@@ -174,75 +279,102 @@ def calculate_classification_metrics(
         y_pred >= threshold
     ).astype(int)
 
+    # --------------------------------------------------------
+    # MACRO F1
+    # --------------------------------------------------------
+
     macro_f1 = f1_score(
         y_true_binary,
         y_pred_binary,
         average="macro",
-        zero_division=0
+        zero_division=0,
     )
 
-    balanced_acc = balanced_accuracy_score(
-        y_true_binary,
-        y_pred_binary
+    # --------------------------------------------------------
+    # BALANCED ACCURACY
+    # --------------------------------------------------------
+
+    balanced_accuracy = (
+        balanced_accuracy_score(
+            y_true_binary,
+            y_pred_binary,
+        )
     )
+
+    # --------------------------------------------------------
+    # AUROC
+    # --------------------------------------------------------
 
     try:
+
         auroc = roc_auc_score(
             y_true_binary,
-            y_pred
+            y_pred,
         )
+
     except ValueError:
+
         auroc = np.nan
 
-    try:
-        auprc = average_precision_score(
-            y_true_binary,
-            y_pred
-        )
-    except ValueError:
-        auprc = np.nan
+    # --------------------------------------------------------
+    # AUPRC
+    # --------------------------------------------------------
 
     try:
+
+        auprc = average_precision_score(
+            y_true_binary,
+            y_pred,
+        )
+
+    except ValueError:
+
+        auprc = np.nan
+
+    # --------------------------------------------------------
+    # MCC
+    # --------------------------------------------------------
+
+    try:
+
         mcc = matthews_corrcoef(
             y_true_binary,
-            y_pred_binary
+            y_pred_binary,
         )
+
     except ValueError:
+
         mcc = np.nan
 
     return (
         threshold,
         macro_f1,
-        balanced_acc,
+        balanced_accuracy,
         auroc,
         auprc,
-        mcc
+        mcc,
     )
 
 
 # ============================================================
-# RANKING METRICS
-#
-# Ranking is performed within each CELLNAME.
-#
-# For each cell line:
-#   - rank predictions
-#   - identify actual top 10% as relevant
-#   - calculate Precision@50
-#   - calculate Recall@100
-#   - calculate nDCG@100
-#   - calculate Enrichment@100
-#
-# Final value = mean across cell lines.
+# DCG
 # ============================================================
 
-def dcg_at_k(relevances, k):
+def dcg_at_k(
+    relevances,
+    k,
+):
+    """
+    Calculate Discounted Cumulative Gain.
+    """
 
     relevances = np.asarray(
-        relevances[:k]
+        relevances[:k],
+        dtype=float
     )
 
     if len(relevances) == 0:
+
         return 0.0
 
     discounts = np.log2(
@@ -253,172 +385,338 @@ def dcg_at_k(relevances, k):
     )
 
     return np.sum(
-        (2 ** relevances - 1)
+        (
+            (2 ** relevances) - 1
+        )
         / discounts
     )
 
 
-def ndcg_at_k(relevances, k):
-
-    actual_dcg = dcg_at_k(
-        relevances,
-        k
-    )
-
-    ideal_relevances = sorted(
-        relevances,
-        reverse=True
-    )
-
-    ideal_dcg = dcg_at_k(
-        ideal_relevances,
-        k
-    )
-
-    if ideal_dcg == 0:
-        return np.nan
-
-    return actual_dcg / ideal_dcg
-
+# ============================================================
+# RANKING METRICS
+# ============================================================
 
 def calculate_ranking_metrics(
-    test_df,
-    y_test,
-    y_pred
+    df,
+    y_pred,
 ):
+    """
+    Calculate ranking metrics within each CELLNAME.
 
-    ranking_df = test_df.copy()
+    For each cell line:
 
-    ranking_df["TRUE_SCORE"] = np.asarray(
-        y_test
+        1. Rank predictions from highest to lowest.
+        2. Define actual top 10% as relevant.
+        3. Calculate:
+           - Precision@50
+           - Precision@100
+           - Recall@100
+           - nDCG@100
+           - Enrichment@100
+
+    Final values are the mean across cell lines.
+    """
+
+    work = df.copy()
+
+    work["PREDICTED_SCORE"] = (
+        np.asarray(
+            y_pred,
+            dtype=float
+        )
     )
 
-    ranking_df["PRED_SCORE"] = np.asarray(
-        y_pred
-    )
-
-    precision_values = []
-    recall_values = []
-    ndcg_values = []
-    enrichment_values = []
-
     # --------------------------------------------------------
-    # Rank independently within each cancer cell line
+    # Check required column
     # --------------------------------------------------------
 
-    for cell_line, group in ranking_df.groupby(
-        "CELLNAME"
+    if "CELLNAME" not in work.columns:
+
+        raise ValueError(
+            "CELLNAME column is required "
+            "for ranking metrics."
+        )
+
+    if "SCORE" not in work.columns:
+
+        raise ValueError(
+            "SCORE column is required "
+            "for ranking metrics."
+        )
+
+    # --------------------------------------------------------
+    # Storage
+    # --------------------------------------------------------
+
+    precision50_values = []
+
+    precision100_values = []
+
+    recall100_values = []
+
+    ndcg100_values = []
+
+    enrichment100_values = []
+
+    # --------------------------------------------------------
+    # GROUP BY CELL LINE
+    # --------------------------------------------------------
+
+    for cell_name, group in work.groupby(
+        "CELLNAME",
+        sort=False,
     ):
 
-        if len(group) < 100:
+        group = group[
+            [
+                "SCORE",
+                "PREDICTED_SCORE"
+            ]
+        ].copy()
+
+        group["SCORE"] = pd.to_numeric(
+            group["SCORE"],
+            errors="coerce"
+        )
+
+        group["PREDICTED_SCORE"] = pd.to_numeric(
+            group["PREDICTED_SCORE"],
+            errors="coerce"
+        )
+
+        group = group.dropna(
+            subset=[
+                "SCORE",
+                "PREDICTED_SCORE"
+            ]
+        )
+
+        n = len(group)
+
+        if n == 0:
+
             continue
 
-        group = group.copy()
+        # ----------------------------------------------------
+        # ACTUAL TOP 10% = RELEVANT
+        # ----------------------------------------------------
 
-        # Actual top 10% = relevant
-        threshold = group[
-            "TRUE_SCORE"
-        ].quantile(0.90)
+        n_relevant = max(
+            1,
+            int(
+                np.ceil(
+                    0.10 * n
+                )
+            )
+        )
+
+        actual_order = (
+            group["SCORE"]
+            .sort_values(
+                ascending=False
+            )
+            .index
+        )
+
+        relevant_indices = set(
+            actual_order[
+                :n_relevant
+            ]
+        )
 
         group["RELEVANT"] = (
-            group["TRUE_SCORE"]
-            >= threshold
-        ).astype(int)
+            group.index
+            .isin(
+                relevant_indices
+            )
+            .astype(int)
+        )
 
-        # Rank by prediction
+        # ----------------------------------------------------
+        # RANK BY PREDICTION
+        # ----------------------------------------------------
+
         ranked = group.sort_values(
-            "PRED_SCORE",
+            "PREDICTED_SCORE",
             ascending=False
         )
 
         # ----------------------------------------------------
-        # Precision@50
+        # PRECISION @ 50
         # ----------------------------------------------------
 
-        top50 = ranked.head(50)
+        k50 = min(
+            50,
+            n
+        )
+
+        top50 = ranked.head(
+            k50
+        )
 
         precision50 = (
             top50["RELEVANT"].sum()
-            / 50
+            / k50
         )
 
-        precision_values.append(
+        precision50_values.append(
             precision50
         )
 
         # ----------------------------------------------------
-        # Recall@100
+        # PRECISION @ 100
         # ----------------------------------------------------
 
-        top100 = ranked.head(100)
-
-        total_relevant = (
-            group["RELEVANT"].sum()
+        k100 = min(
+            100,
+            n
         )
 
-        if total_relevant > 0:
-
-            recall100 = (
-                top100["RELEVANT"].sum()
-                / total_relevant
-            )
-
-            recall_values.append(
-                recall100
-            )
-
-        # ----------------------------------------------------
-        # nDCG@100
-        # ----------------------------------------------------
-
-        ndcg = ndcg_at_k(
-            top100["RELEVANT"].tolist(),
-            100
+        top100 = ranked.head(
+            k100
         )
 
-        if not np.isnan(ndcg):
+        precision100 = (
+            top100["RELEVANT"].sum()
+            / k100
+        )
 
-            ndcg_values.append(
-                ndcg
-            )
+        precision100_values.append(
+            precision100
+        )
 
         # ----------------------------------------------------
-        # Enrichment@100
+        # RECALL @ 100
         # ----------------------------------------------------
 
-        observed_hits = (
+        relevant_found = (
             top100["RELEVANT"].sum()
         )
 
-        expected_hits = (
-            100
-            * total_relevant
-            / len(group)
+        recall100 = (
+            relevant_found
+            / n_relevant
         )
 
-        if expected_hits > 0:
+        recall100 = min(
+            recall100,
+            1.0
+        )
 
-            enrichment = (
-                observed_hits
-                / expected_hits
+        recall100_values.append(
+            recall100
+        )
+
+        # ----------------------------------------------------
+        # nDCG @ 100
+        # ----------------------------------------------------
+
+        predicted_relevances = (
+            top100["RELEVANT"]
+            .to_numpy()
+        )
+
+        dcg = dcg_at_k(
+            predicted_relevances,
+            k100
+        )
+
+        # Ideal ranking contains all relevant items first.
+        ideal_relevances = np.concatenate(
+            [
+                np.ones(
+                    min(
+                        n_relevant,
+                        k100
+                    )
+                ),
+                np.zeros(
+                    max(
+                        0,
+                        k100 - n_relevant
+                    )
+                ),
+            ]
+        )
+
+        ideal_dcg = dcg_at_k(
+            ideal_relevances,
+            k100
+        )
+
+        if ideal_dcg > 0:
+
+            ndcg100 = (
+                dcg
+                / ideal_dcg
             )
 
-            enrichment_values.append(
-                enrichment
+        else:
+
+            ndcg100 = 0.0
+
+        ndcg100_values.append(
+            ndcg100
+        )
+
+        # ----------------------------------------------------
+        # ENRICHMENT @ 100
+        # ----------------------------------------------------
+
+        prevalence = (
+            n_relevant
+            / n
+        )
+
+        if prevalence > 0:
+
+            enrichment100 = (
+                precision100
+                / prevalence
             )
+
+        else:
+
+            enrichment100 = np.nan
+
+        enrichment100_values.append(
+            enrichment100
+        )
+
+    # ========================================================
+    # MEAN ACROSS CELL LINES
+    # ========================================================
 
     return (
-        np.mean(precision_values)
-        if precision_values else np.nan,
+        np.nanmean(
+            precision50_values
+        )
+        if precision50_values
+        else np.nan,
 
-        np.mean(recall_values)
-        if recall_values else np.nan,
+        np.nanmean(
+            precision100_values
+        )
+        if precision100_values
+        else np.nan,
 
-        np.mean(ndcg_values)
-        if ndcg_values else np.nan,
+        np.nanmean(
+            recall100_values
+        )
+        if recall100_values
+        else np.nan,
 
-        np.mean(enrichment_values)
-        if enrichment_values else np.nan
+        np.nanmean(
+            ndcg100_values
+        )
+        if ndcg100_values
+        else np.nan,
+
+        np.nanmean(
+            enrichment100_values
+        )
+        if enrichment100_values
+        else np.nan,
     )
 
 
@@ -426,124 +724,233 @@ def calculate_ranking_metrics(
 # EVALUATE ONE SPLIT
 # ============================================================
 
-def evaluate_split(split_name):
+def evaluate_split(
+    split_name,
+):
+    """
+    Evaluate Extra Trees depth-25 on one split.
+    """
 
-    print("\n")
-    print("=" * 70)
+    print()
+    print("=" * 80)
     print(
-        f"EVALUATING: {split_name.upper()}"
+        f"EXTRA TREES DEPTH-25 — {split_name.upper()}"
     )
-    print("=" * 70)
-
+    print("=" * 80)
 
     # --------------------------------------------------------
-    # LOAD TRAINING DATA
-    # Used for:
-    #   1. feature columns
-    #   2. synergy threshold
+    # FILE PATHS
     # --------------------------------------------------------
 
-    train_path = os.path.join(
+    train_file = os.path.join(
         FEATURES_DIR,
         split_name,
         "train_features.csv"
     )
 
-    print("\nLoading training data...")
-
-    train_df = pd.read_csv(
-        train_path,
-        low_memory=False
-    )
-
-    X_train, y_train = prepare_data(
-        train_df
-    )
-
-    y_train = y_train.dropna()
-
-    feature_columns = X_train.columns
-
-    print(
-        "Training matrix:",
-        X_train.shape
-    )
-
-    # We don't need X_train anymore
-    del X_train
-    gc.collect()
-
-
-    # --------------------------------------------------------
-    # LOAD TEST DATA
-    # --------------------------------------------------------
-
-    test_path = os.path.join(
+    test_file = os.path.join(
         FEATURES_DIR,
         split_name,
         "test_features.csv"
     )
 
-    print("\nLoading test data...")
-
-    test_df = pd.read_csv(
-        test_path,
-        low_memory=False
+    model_file = os.path.join(
+        MODEL_DIR,
+        f"{MODEL_PREFIX}_{split_name}.pkl"
     )
 
-    X_test, y_test = prepare_data(
-        test_df,
-        feature_columns=feature_columns
+    # --------------------------------------------------------
+    # CHECK FILES
+    # --------------------------------------------------------
+
+    for path in [
+        train_file,
+        test_file,
+        model_file,
+    ]:
+
+        if not os.path.exists(path):
+
+            raise FileNotFoundError(
+                f"\nRequired file not found:\n{path}"
+            )
+
+    print(
+        "\nModel:"
     )
 
     print(
-        "Test matrix:",
-        X_test.shape
+        model_file
     )
-
 
     # --------------------------------------------------------
     # LOAD MODEL
     # --------------------------------------------------------
 
-    model_path = os.path.join(
-        MODEL_DIR,
-        f"random_forest_{split_name}.pkl"
-    )
-
     print(
-        "\nLoading model:",
-        model_path
+        "\nLoading model..."
     )
 
     model = joblib.load(
-        model_path
+        model_file
     )
 
+    print(
+        "Model type:",
+        type(model).__name__
+    )
+
+    print(
+        "Trees:",
+        model.n_estimators
+    )
+
+    print(
+        "Max depth:",
+        model.max_depth
+    )
+
+    print(
+        "Min samples leaf:",
+        model.min_samples_leaf
+    )
+
+    print(
+        "Max features:",
+        model.max_features
+    )
+
+    print(
+        "Number of features:",
+        len(
+            model.feature_names_in_
+        )
+    )
 
     # --------------------------------------------------------
-    # PREDICTION
+    # LOAD TRAINING DATA
     # --------------------------------------------------------
 
-    print("\nGenerating predictions...")
+    print(
+        "\nLoading training data..."
+    )
+
+    train_df = pd.read_csv(
+        train_file,
+        low_memory=False
+    )
+
+    print(
+        "Training shape:",
+        train_df.shape
+    )
+
+    # --------------------------------------------------------
+    # LOAD TEST DATA
+    # --------------------------------------------------------
+
+    print(
+        "\nLoading test data..."
+    )
+
+    test_df = pd.read_csv(
+        test_file,
+        low_memory=False
+    )
+
+    print(
+        "Test shape:",
+        test_df.shape
+    )
+
+    # --------------------------------------------------------
+    # PREPARE TEST DATA
+    # --------------------------------------------------------
+
+    print(
+        "\nPreparing test features..."
+    )
+
+    X_test = prepare_data(
+        test_df,
+        feature_columns=model.feature_names_in_
+    )
+
+    print(
+        "Prediction matrix:",
+        X_test.shape
+    )
+
+    # --------------------------------------------------------
+    # TARGET
+    # --------------------------------------------------------
+
+    y_test = pd.to_numeric(
+        test_df["SCORE"],
+        errors="coerce"
+    )
+
+    valid_mask = (
+        y_test.notna()
+    )
+
+    y_test = (
+        y_test[
+            valid_mask
+        ]
+        .to_numpy(
+            dtype=float
+        )
+    )
+
+    X_test = X_test.loc[
+        valid_mask
+    ]
+
+    test_eval_df = test_df.loc[
+        valid_mask
+    ].copy()
+
+    # --------------------------------------------------------
+    # PREDICTIONS
+    # --------------------------------------------------------
+
+    print(
+        "\nGenerating predictions..."
+    )
 
     y_pred = model.predict(
         X_test
     )
 
+    y_pred = np.asarray(
+        y_pred,
+        dtype=float
+    )
 
-    # --------------------------------------------------------
+    print(
+        "Predictions generated:",
+        len(y_pred)
+    )
+
+    # ========================================================
     # REGRESSION METRICS
-    # --------------------------------------------------------
+    # ========================================================
 
-    rmse = mean_squared_error(
-        y_test,
-        y_pred
-    ) ** 0.5
+    print(
+        "\nCalculating regression metrics..."
+    )
 
     mae = mean_absolute_error(
         y_test,
         y_pred
+    )
+
+    rmse = np.sqrt(
+        mean_squared_error(
+            y_test,
+            y_pred
+        )
     )
 
     r2 = r2_score(
@@ -551,148 +958,201 @@ def evaluate_split(split_name):
         y_pred
     )
 
-
-    # --------------------------------------------------------
-    # CORRELATION
-    # --------------------------------------------------------
-
-    pearson, spearman = calculate_correlations(
-        y_test,
-        y_pred
+    pearson, spearman = (
+        calculate_correlations(
+            y_test,
+            y_pred
+        )
     )
 
+    # ========================================================
+    # TRAINING TARGET
+    # ========================================================
 
-    # --------------------------------------------------------
-    # CLASSIFICATION
-    # --------------------------------------------------------
+    y_train = pd.to_numeric(
+        train_df["SCORE"],
+        errors="coerce"
+    )
+
+    y_train = (
+        y_train
+        .dropna()
+        .to_numpy(
+            dtype=float
+        )
+    )
+
+    # ========================================================
+    # CLASSIFICATION METRICS
+    # ========================================================
+
+    print(
+        "Calculating classification metrics..."
+    )
 
     (
-        threshold,
+        synergy_threshold,
         macro_f1,
-        balanced_acc,
+        balanced_accuracy,
         auroc,
         auprc,
-        mcc
+        mcc,
     ) = calculate_classification_metrics(
         y_train,
         y_test,
-        y_pred
+        y_pred,
     )
 
+    # ========================================================
+    # RANKING METRICS
+    # ========================================================
 
-    # --------------------------------------------------------
-    # RANKING
-    # --------------------------------------------------------
+    print(
+        "Calculating ranking metrics..."
+    )
 
     (
         precision50,
+        precision100,
         recall100,
         ndcg100,
-        enrichment100
+        enrichment100,
     ) = calculate_ranking_metrics(
-        test_df,
-        y_test,
-        y_pred
+        test_eval_df,
+        y_pred,
     )
 
+    # ========================================================
+    # PRINT RESULTS
+    # ========================================================
 
-    # --------------------------------------------------------
-    # PRINT
-    # --------------------------------------------------------
-
-    print("\nRESULTS")
-
+    print()
+    print("-" * 80)
     print(
-        f"MAE              : {mae:.4f}"
+        "FINAL METRICS"
     )
+    print("-" * 80)
 
     print(
-        f"RMSE             : {rmse:.4f}"
-    )
-
-    print(
-        f"R²               : {r2:.4f}"
+        f"MAE              : {mae:.6f}"
     )
 
     print(
-        f"Pearson          : {pearson:.4f}"
+        f"RMSE             : {rmse:.6f}"
     )
 
     print(
-        f"Spearman         : {spearman:.4f}"
+        f"R2               : {r2:.6f}"
     )
 
     print(
-        f"Synergy threshold: {threshold:.4f}"
+        f"Pearson          : {pearson:.6f}"
     )
 
     print(
-        f"Macro-F1         : {macro_f1:.4f}"
+        f"Spearman         : {spearman:.6f}"
     )
 
     print(
-        f"Balanced Accuracy: {balanced_acc:.4f}"
+        f"Synergy Threshold: {synergy_threshold:.6f}"
     )
 
     print(
-        f"AUROC            : {auroc:.4f}"
+        f"Macro F1         : {macro_f1:.6f}"
     )
 
     print(
-        f"AUPRC            : {auprc:.4f}"
+        f"Balanced Accuracy: {balanced_accuracy:.6f}"
     )
 
     print(
-        f"MCC              : {mcc:.4f}"
+        f"AUROC            : {auroc:.6f}"
     )
 
     print(
-        f"Precision@50     : {precision50:.4f}"
+        f"AUPRC            : {auprc:.6f}"
     )
 
     print(
-        f"Recall@100       : {recall100:.4f}"
+        f"MCC              : {mcc:.6f}"
     )
 
     print(
-        f"nDCG@100         : {ndcg100:.4f}"
+        f"Precision@50     : {precision50:.6f}"
     )
 
     print(
-        f"Enrichment@100   : {enrichment100:.4f}"
+        f"Precision@100    : {precision100:.6f}"
     )
 
+    print(
+        f"Recall@100       : {recall100:.6f}"
+    )
+
+    print(
+        f"nDCG@100         : {ndcg100:.6f}"
+    )
+
+    print(
+        f"Enrichment@100   : {enrichment100:.6f}"
+    )
+
+    print("-" * 80)
+
+    # ========================================================
+    # RESULT DICTIONARY
+    # ========================================================
+
+    result = {
+        "Split": split_name,
+
+        "Model": MODEL_PREFIX,
+
+        "MAE": mae,
+
+        "RMSE": rmse,
+
+        "R2": r2,
+
+        "Pearson": pearson,
+
+        "Spearman": spearman,
+
+        "Synergy_Threshold": synergy_threshold,
+
+        "Macro_F1": macro_f1,
+
+        "Balanced_Accuracy": balanced_accuracy,
+
+        "AUROC": auroc,
+
+        "AUPRC": auprc,
+
+        "MCC": mcc,
+
+        "Precision_at_50": precision50,
+
+        "Precision_at_100": precision100,
+
+        "Recall_at_100": recall100,
+
+        "nDCG_at_100": ndcg100,
+
+        "Enrichment_at_100": enrichment100,
+    }
 
     # --------------------------------------------------------
     # CLEAN MEMORY
     # --------------------------------------------------------
 
-    result = {
-        "Split": split_name,
-        "MAE": mae,
-        "RMSE": rmse,
-        "R2": r2,
-        "Pearson": pearson,
-        "Spearman": spearman,
-        "Synergy_Threshold": threshold,
-        "Macro_F1": macro_f1,
-        "Balanced_Accuracy": balanced_acc,
-        "AUROC": auroc,
-        "AUPRC": auprc,
-        "MCC": mcc,
-        "Precision_at_50": precision50,
-        "Recall_at_100": recall100,
-        "nDCG_at_100": ndcg100,
-        "Enrichment_at_100": enrichment100
-    }
-
-
+    del model
     del train_df
     del test_df
+    del test_eval_df
     del X_test
     del y_test
+    del y_train
     del y_pred
-    del model
 
     gc.collect()
 
@@ -703,64 +1163,164 @@ def evaluate_split(split_name):
 # MAIN
 # ============================================================
 
-results = []
+def main():
 
-for split_name in SPLITS:
+    print()
+    print("=" * 80)
+    print(
+        "DISCOVERATHON 2026"
+    )
+    print(
+        "COMPREHENSIVE EXTRA TREES DEPTH-25 EVALUATION"
+    )
+    print("=" * 80)
 
-    try:
+    print()
+    print(
+        "Model configuration:"
+    )
+
+    print(
+        "ExtraTreesRegressor"
+    )
+
+    print(
+        "n_estimators = 50"
+    )
+
+    print(
+        "max_depth = 25"
+    )
+
+    print(
+        "min_samples_leaf = 1"
+    )
+
+    print(
+        "max_features = 1.0"
+    )
+
+    print(
+        "random_state = 42"
+    )
+
+    print()
+    print(
+        "Splits:"
+    )
+
+    for split in SPLITS:
+
+        print(
+            f"  - {split}"
+        )
+
+    # --------------------------------------------------------
+    # EVALUATE ALL SPLITS
+    # --------------------------------------------------------
+
+    all_results = []
+
+    for split_name in SPLITS:
 
         result = evaluate_split(
             split_name
         )
 
-        results.append(
+        all_results.append(
             result
         )
 
-    except Exception as e:
+    # --------------------------------------------------------
+    # CREATE DATAFRAME
+    # --------------------------------------------------------
 
-        print(
-            f"\nERROR evaluating {split_name}:"
-        )
+    results_df = pd.DataFrame(
+        all_results
+    )
 
-        print(
-            repr(e)
-        )
+    # --------------------------------------------------------
+    # COLUMN ORDER
+    # --------------------------------------------------------
 
-        gc.collect()
+    columns = [
+        "Split",
+        "Model",
+        "MAE",
+        "RMSE",
+        "R2",
+        "Pearson",
+        "Spearman",
+        "Synergy_Threshold",
+        "Macro_F1",
+        "Balanced_Accuracy",
+        "AUROC",
+        "AUPRC",
+        "MCC",
+        "Precision_at_50",
+        "Precision_at_100",
+        "Recall_at_100",
+        "nDCG_at_100",
+        "Enrichment_at_100",
+    ]
 
+    results_df = results_df[
+        columns
+    ]
 
-# ============================================================
-# SAVE RESULTS
-# ============================================================
+    # --------------------------------------------------------
+    # SAVE
+    # --------------------------------------------------------
 
-results_df = pd.DataFrame(
-    results
-)
+    output_file = os.path.join(
+        RESULTS_DIR,
+        "comprehensive_metrics.csv"
+    )
 
-output_path = os.path.join(
-    RESULTS_DIR,
-    "comprehensive_metrics.csv"
-)
-
-results_df.to_csv(
-    output_path,
-    index=False
-)
-
-
-print("\n")
-print("=" * 70)
-print("COMPREHENSIVE METRICS")
-print("=" * 70)
-
-print(
-    results_df.to_string(
+    results_df.to_csv(
+        output_file,
         index=False
     )
-)
 
-print(
-    "\nSaved:",
-    output_path
-)
+    # ========================================================
+    # FINAL SUMMARY
+    # ========================================================
+
+    print()
+    print("=" * 100)
+    print(
+        "FINAL COMPREHENSIVE METRICS"
+    )
+    print("=" * 100)
+
+    print(
+        results_df.to_string(
+            index=False
+        )
+    )
+
+    print()
+    print(
+        "=" * 100
+    )
+
+    print(
+        "Saved:"
+    )
+
+    print(
+        output_file
+    )
+
+    print(
+        "=" * 100
+    )
+
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
+
+if __name__ == "__main__":
+
+    main()
