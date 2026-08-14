@@ -1,0 +1,2 @@
+Model,n_estimators,max_depth,min_samples_leaf,max_features,Validation_RMSE,Validation_MAE,Validation_R2,Test_RMSE,Test_MAE,Test_R2
+Extra Trees depth25,50,25,1,1.0,9.275172220947391,6.2285612546050055,0.4475669720380425,9.198053501877041,6.200880400414223,0.4532484921767489

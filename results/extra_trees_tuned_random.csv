@@ -1,0 +1,2 @@
+Model,n_estimators,max_depth,min_samples_leaf,max_features,Validation_RMSE,Validation_MAE,Validation_R2,Test_RMSE,Test_MAE,Test_R2
+Extra Trees Tuned,50,None,1,1.0,8.991261202546939,5.99455938483827,0.4808690763474055,8.911020993212789,5.959642549931219,0.4868396883068532
