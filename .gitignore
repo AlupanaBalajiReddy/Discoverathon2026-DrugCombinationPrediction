@@ -51,3 +51,12 @@ __pycache__/
 *.swp
 *.swo
 *~
+
+# Local backups
+backup/
+
+# Local ensemble prediction outputs
+results/ensemble/*_ensemble_predictions.csv
+
+# Local ensemble prediction outputs
+results/ensemble/*predictions.csv
