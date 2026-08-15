@@ -4,6 +4,8 @@
 
 **Assigned Problem Statement:** Predicting Drug Combination Activity
 
+**Team Name:** Sanjeevani
+
 ---
 
 # 1. Project Overview
@@ -939,9 +941,15 @@ scipy==1.17.1
 
 # 27. Reproducibility
 
-The project is designed so that the code, model checkpoints, processed molecular data, evaluation splits, results, figures, and prediction output can be inspected independently.
+The project is organized to support three levels of reproducibility:
 
-The repository contains the source code and smaller submission artifacts, while large artifacts are additionally maintained through Git LFS and Zenodo.
+1. **Model inference** using the supplied final Extra Trees checkpoint.
+2. **Reproduction of the reported evaluation results** using the supplied splits, checkpoints, results, and prediction files.
+3. **Reproduction of the complete analysis workflow** from the available project data and source code.
+
+The repository contains the source code, processed molecular information, evaluation splits, trained model checkpoints, results, figures, notebooks, and prediction outputs required to inspect and reproduce the submitted work.
+
+Large model checkpoints, split files, and test predictions are tracked using Git LFS and are additionally archived through Zenodo.
 
 ---
 
@@ -949,7 +957,7 @@ The repository contains the source code and smaller submission artifacts, while 
 
 Large repository artifacts are tracked using **Git Large File Storage (Git LFS)**.
 
-The repository currently contains **18 Git LFS-tracked files**.
+The final repository contains **18 Git LFS-tracked files**.
 
 These include:
 
@@ -959,9 +967,16 @@ These include:
 - Cold-cell-line train/validation/test splits
 - Cold-drug train/validation/test splits
 - Cold-drug assignment information
-- Test predictions
+- Final test predictions
 
-LFS integrity was verified using:
+The LFS-tracked files can be retrieved after cloning the repository using:
+
+`````bash
+git lfs install
+git lfs pull
+`````
+
+The integrity of the local LFS objects was verified using:
 
 ```bash
 git lfs fsck
@@ -977,7 +992,7 @@ Git LFS fsck OK
 
 # 29. Large Artifact Archive
 
-Because several trained models and dataset splits are large, the large reproducibility artifacts were packaged separately.
+The largest reproducibility artifacts were additionally packaged into a single compressed archive.
 
 The archive contains:
 
@@ -989,23 +1004,25 @@ test_predictions.csv
 
 The archive contains **18 files**.
 
-The prepared archive was:
+The prepared archive is:
 
 ```text
 Discoverathon2026_large_artifacts.tar.gz
 ```
 
-The archive was validated successfully using:
+The archive was validated using:
 
 ```bash
 tar -tzf Discoverathon2026_large_artifacts.tar.gz
 ```
 
+The archive successfully passed the integrity check.
+
 ---
 
 # 30. Zenodo Reproducibility Record
 
-The large-artifact archive is also available through Zenodo.
+A copy of the large-artifact archive is available through the project's Zenodo record.
 
 **DOI:**
 
@@ -1013,21 +1030,23 @@ The large-artifact archive is also available through Zenodo.
 10.5281/zenodo.21945858
 ```
 
-**Record:**
+**Zenodo record:**
 
-https://doi.org/10.5281/zenodo.21945858
+:contentReference[oaicite:0]{index=0}
 
-The Zenodo record provides access to the large reproducibility artifacts that are not convenient to distribute as ordinary repository files.
+The archive provides an additional access route for the large reproducibility artifacts.
 
-The archive includes:
+It contains:
 
-- Trained model checkpoints
+- Trained Extra Trees model checkpoints
 - Random evaluation splits
 - Cold-combination evaluation splits
 - Cold-cell-line evaluation splits
 - Cold-drug evaluation splits
 - Cold-drug assignment information
 - Final test predictions
+
+The GitHub repository remains the primary location for the project source code and documentation, while Zenodo provides an archival distribution route for the large artifacts.
 
 ---
 
@@ -1039,9 +1058,7 @@ The SHA256 checksum of the prepared large-artifact archive is:
 d506a3b1da38a792145c299eff1fbf70d2a8f6c17a7deb77219cb608c7c0ed37
 ```
 
-The archive was validated before upload.
-
-The archive contains:
+The archive contained:
 
 ```text
 18 files
@@ -1053,11 +1070,48 @@ The checksum can be independently verified using:
 sha256sum Discoverathon2026_large_artifacts.tar.gz
 ```
 
+The archive can also be tested using:
+
+```bash
+tar -tzf Discoverathon2026_large_artifacts.tar.gz >/dev/null
+```
+
+A successful command indicates that the compressed archive can be read without a tar/gzip integrity error.
+
 ---
 
 # 32. Reproduction Workflow
 
-## 32.1 Clone the Repository
+The project supports separate workflows for **using the submitted model**, **reproducing the submitted analysis**, and **training models from available project data**.
+
+## 32.1 System Requirements
+
+A Linux-based environment is recommended.
+
+The project uses:
+
+- Python 3.11
+- Git
+- Git LFS
+- Conda or another Python environment manager
+
+The required Python packages are specified in:
+
+```text
+requirements.txt
+```
+
+The repository also contains:
+
+```text
+submission/requirements.txt
+```
+
+for the submission package.
+
+---
+
+## 32.2 Clone the Repository
 
 Using SSH:
 
@@ -1075,45 +1129,673 @@ cd Discoverathon2026-DrugCombinationPrediction
 
 ---
 
-## 32.2 Initialize Git LFS
+## 32.3 Initialize Git LFS
+
+Install and initialize Git LFS:
 
 ```bash
 git lfs install
+```
+
+Retrieve the large repository artifacts:
+
+```bash
 git lfs pull
+```
+
+Verify the downloaded LFS objects:
+
+```bash
+git lfs fsck
+```
+
+The expected result is:
+
+```text
+Git LFS fsck OK
 ```
 
 ---
 
-## 32.3 Create the Python Environment
+## 32.4 Create the Python Environment
+
+Using Conda:
 
 ```bash
 conda create -n discoverathon python=3.11 -y
 conda activate discoverathon
 ```
 
+Alternatively, using Python's built-in virtual environment:
+
+```bash
+python3.11 -m venv discoverathon
+source discoverathon/bin/activate
+```
+
+For Windows:
+
+```powershell
+py -3.11 -m venv discoverathon
+discoverathon\Scripts\activate
+```
+
 ---
 
-## 32.4 Install Dependencies
+## 32.5 Install Dependencies
+
+From the repository root:
 
 ```bash
 pip install -r requirements.txt
 ```
 
+Verify the installation:
+
+```bash
+python --version
+pip list
+```
+
 ---
 
-## 32.5 Generate Predictions
+## 32.6 Repository Verification
+
+After cloning and installing the environment, verify the important submitted artifacts:
+
+```bash
+ls -lh submission/checkpoints/
+```
+
+The directory should contain:
+
+```text
+extra_trees_depth25_random.pkl
+extra_trees_depth25_cold_combination.pkl
+extra_trees_depth25_cold_cell_line.pkl
+extra_trees_depth25_cold_drug.pkl
+```
+
+Verify the split files:
+
+```bash
+find submission/splits -type f | sort
+```
+
+Verify the test predictions:
+
+```bash
+ls -lh submission/test_predictions.csv
+```
+
+---
+
+## 32.7 Using the Supplied Final Model for Prediction
+
+The primary user-facing inference workflow uses the supplied final random-split Extra Trees model:
+
+```text
+submission/checkpoints/extra_trees_depth25_random.pkl
+```
+
+The prediction script is:
+
+```text
+submission/src/predict.py
+```
+
+Run:
+
+```bash
+python submission/src/predict.py my_input.csv my_predictions.csv
+
+```
+
+Replace `my_input.csv` and `my_predictions.csv` with the paths to your own input and output CSV files.
+
+For example:
 
 ```bash
 python submission/src/predict.py \
-submission/splits/random/test.csv \
-submission/predictions.csv
+examples/example_input.csv \
+examples/example_predictions.csv
 ```
 
-The output file will contain the original input columns together with:
+The script:
+
+1. Loads the supplied Extra Trees checkpoint.
+2. Reads the input CSV.
+3. Removes target/leakage and metadata columns that must not be used as predictive inputs.
+4. Encodes categorical variables.
+5. Converts feature values to numeric form.
+6. Handles missing feature values.
+7. Aligns the resulting matrix to the exact feature ordering expected by the trained model.
+8. Generates predictions.
+9. Writes the predictions to the requested output CSV.
+
+
+**Important: `SCORE` must not be included in the input CSV when generating new predictions.**
+
+`SCORE` is the experimentally measured target variable that the model is trained to predict. The supplied `examples/example_input.csv` demonstrates the required target-free input format. The prediction script generates `PREDICTED_SCORE` as the model output.
+
+The trained random-split model expects **107 input features after preprocessing and feature alignment**.
+
+The output CSV retains the input information and adds:
 
 ```text
 PREDICTED_SCORE
 ```
+
+---
+
+## 32.8 Input File Requirements for Prediction
+
+The prediction input should contain the experimental and molecular features required by the trained model.
+
+The feature representation includes:
+
+### Experimental features
+
+```text
+CONCINDEX1
+CONC1
+CONCUNIT1
+CONCINDEX2
+CONC2
+CONCUNIT2
+VALID
+PANEL
+CELLNAME
+```
+
+### Drug 1 molecular descriptors
+
+```text
+MolWt_1
+ExactMolWt_1
+MolLogP_1
+TPSA_1
+NumHDonors_1
+NumHAcceptors_1
+NumRotatableBonds_1
+HeavyAtomCount_1
+RingCount_1
+NumAromaticRings_1
+FractionCSP3_1
+MolMR_1
+```
+
+### Drug 2 molecular descriptors
+
+```text
+MolWt_2
+ExactMolWt_2
+MolLogP_2
+TPSA_2
+NumHDonors_2
+NumHAcceptors_2
+NumRotatableBonds_2
+HeavyAtomCount_2
+RingCount_2
+NumAromaticRings_2
+FractionCSP3_2
+MolMR_2
+```
+
+Additional categorical and numerical columns present in the original experimental representation may also be supplied. The prediction script removes columns that are not required by the trained model and aligns the final matrix to the model's stored feature schema.
+
+### Important
+
+`SCORE` is the prediction target and must **not** be used as a predictive feature.
+
+If `SCORE` is present in an evaluation input file, the prediction pipeline removes it before generating predictions.
+
+The expected prediction output is:
+
+```text
+PREDICTED_SCORE
+```
+
+---
+
+## 32.9 Example Prediction
+
+A small example input is provided under:
+
+```text
+examples/example_input.csv
+```
+
+Run:
+
+```bash
+python submission/src/predict.py \
+examples/example_input.csv \
+examples/example_predictions.csv
+```
+
+Inspect the output:
+
+```bash
+python - <<'PY'
+import pandas as pd
+
+df = pd.read_csv("examples/example_predictions.csv")
+
+print("Output shape:", df.shape)
+print(df.columns.tolist())
+print()
+print(df["PREDICTED_SCORE"])
+PY
+```
+
+The output should contain a `PREDICTED_SCORE` column with one prediction for each input observation.
+
+---
+
+## 32.10 Molecular Descriptor Generation
+
+Molecular descriptors are generated separately from the final prediction script.
+
+The project uses **RDKit** to calculate molecular descriptors for the drugs.
+
+The processed molecular information is stored under:
+
+```text
+data/processed/
+```
+
+and the submission package contains the processed molecular information under:
+
+```text
+submission/data/processed/
+```
+
+The feature-generation workflow uses:
+
+```text
+submission/src/generate_features.py
+```
+
+The molecular descriptor representation includes properties such as:
+
+```text
+MolWt
+ExactMolWt
+MolLogP
+TPSA
+NumHDonors
+NumHAcceptors
+NumRotatableBonds
+HeavyAtomCount
+RingCount
+NumAromaticRings
+FractionCSP3
+MolMR
+```
+
+Separate descriptor sets are constructed for Drug 1 and Drug 2.
+
+---
+
+## 32.11 Generate Dataset Splits
+
+The split-generation workflow is implemented in:
+
+```text
+submission/src/generate_splits.py
+```
+
+The project evaluates four experimental settings:
+
+```text
+random
+cold_combination
+cold_cell_line
+cold_drug
+```
+
+The supplied submission already contains the final split files under:
+
+```text
+submission/splits/
+```
+
+These supplied splits should be used when reproducing the reported test results because they preserve the exact evaluation partitions used for the submitted analysis.
+
+---
+
+## 32.12 Feature Generation
+
+Feature generation is implemented in:
+
+```text
+submission/src/generate_features.py
+```
+
+The workflow combines:
+
+- Experimental features
+- Drug-pair information
+- Drug molecular descriptors
+- Cancer-panel information
+- Cancer cell-line information
+
+The generated feature matrices are used by the model-training and evaluation workflows.
+
+---
+
+## 32.13 Model Training
+
+The repository contains training code under:
+
+```text
+submission/src/train_all_splits.py
+```
+
+The training workflow can be used to inspect and reproduce the model-training procedure implemented in the project.
+
+The final submitted Extra Trees checkpoints, however, are already provided separately under:
+
+```text
+submission/checkpoints/
+```
+
+The final Extra Trees configuration is:
+
+```text
+Model: ExtraTreesRegressor
+n_estimators: 50
+max_depth: 25
+min_samples_leaf: 1
+max_features: 1.0
+random_state: 42
+```
+
+The final random-split checkpoint is:
+
+```text
+submission/checkpoints/extra_trees_depth25_random.pkl
+```
+
+The cold-start checkpoints are:
+
+```text
+submission/checkpoints/extra_trees_depth25_cold_combination.pkl
+submission/checkpoints/extra_trees_depth25_cold_cell_line.pkl
+submission/checkpoints/extra_trees_depth25_cold_drug.pkl
+```
+
+---
+
+## 32.14 Evaluation
+
+Comprehensive evaluation is implemented in:
+
+```text
+submission/src/evaluate_all_metrics.py
+```
+
+The project evaluates the regression task using:
+
+```text
+MAE
+RMSE
+R²
+Pearson correlation
+Spearman correlation
+```
+
+Additional evaluation includes:
+
+```text
+Macro-F1
+Balanced Accuracy
+AUROC
+AUPRC
+MCC
+Precision@50
+Precision@100
+Recall@100
+nDCG@100
+Enrichment@100
+```
+
+The supplied evaluation results are available under:
+
+```text
+submission/results/
+```
+
+---
+
+## 32.15 Cold-Start Evaluation
+
+The project evaluates generalization under three cold-start settings:
+
+```text
+Cold-combination
+Cold-cell-line
+Cold-drug
+```
+
+The purpose is to determine how model performance changes when the test data contain previously unseen entities.
+
+The corresponding trained checkpoints and evaluation splits are supplied in:
+
+```text
+submission/checkpoints/
+submission/splits/
+```
+
+Generalization analysis is implemented in:
+
+```text
+submission/src/analyze_generalization.py
+```
+
+---
+
+## 32.16 Data-Efficiency Analysis
+
+The effect of training-data size is evaluated using:
+
+```text
+submission/src/data_efficiency.py
+```
+
+The analysis evaluates training fractions of:
+
+```text
+1%
+5%
+10%
+25%
+100%
+```
+
+The resulting metrics are available in:
+
+```text
+results/data_efficiency.csv
+```
+
+and:
+
+```text
+submission/results/data_efficiency.csv
+```
+
+---
+
+## 32.17 Generate Figures
+
+The repository contains the final figures under:
+
+```text
+submission/figures/
+```
+
+The data-efficiency plotting workflow is implemented in:
+
+```text
+submission/src/plot_data_efficiency.py
+```
+
+The submitted figures include:
+
+```text
+cold_start_r2.png
+cold_start_rmse.png
+data_efficiency_r2.png
+data_efficiency_rmse.png
+feature_importance.png
+final_model_comparison.png
+final_r2_comparison.png
+generalization_r2.png
+generalization_rmse.png
+shap_feature_importance.png
+shap_summary.png
+```
+
+---
+
+## 32.18 Reproducing the Submitted Results
+
+For the most direct reproduction of the submitted results, use the supplied:
+
+```text
+model checkpoints
+evaluation splits
+prediction files
+evaluation results
+```
+
+rather than regenerating the partitions.
+
+The main result files are:
+
+```text
+submission/results/final_model_results.csv
+submission/results/comprehensive_metrics.csv
+submission/results/generalization_gap.csv
+submission/results/data_efficiency.csv
+submission/results/model_comparison_random_final.csv
+```
+
+The submitted test predictions are:
+
+```text
+submission/test_predictions.csv
+```
+
+---
+
+## 32.19 Reproducibility of the Final Model
+
+The final Extra Trees models use:
+
+```text
+n_estimators = 50
+max_depth = 25
+min_samples_leaf = 1
+max_features = 1.0
+random_state = 42
+```
+
+The exact feature ordering used by each trained model is stored in the trained checkpoint and can be inspected using:
+
+```python
+import joblib
+
+model = joblib.load(
+    "submission/checkpoints/extra_trees_depth25_random.pkl"
+)
+
+print(model.feature_names_in_)
+```
+
+This is important because the prediction pipeline must use the same feature representation and ordering expected by the trained model.
+
+---
+
+## 32.20 Verification After Installation
+
+After installation, run:
+
+```bash
+git lfs fsck
+```
+
+Then verify the final checkpoint:
+
+```bash
+python - <<'PY'
+import joblib
+
+model = joblib.load(
+    "submission/checkpoints/extra_trees_depth25_random.pkl"
+)
+
+print("Model:", type(model).__name__)
+print("Features:", len(model.feature_names_in_))
+print("Estimators:", model.n_estimators)
+print("Max depth:", model.max_depth)
+print("Random state:", model.random_state)
+PY
+```
+
+Expected configuration:
+
+```text
+Model: ExtraTreesRegressor
+Features: 107
+Estimators: 50
+Max depth: 25
+Random state: 42
+```
+
+Finally, test the prediction pipeline:
+
+```bash
+python submission/src/predict.py \
+examples/example_input.csv \
+examples/example_predictions.csv
+```
+
+A successful execution should report that predictions were generated and should produce:
+
+```text
+examples/example_predictions.csv
+```
+
+with a:
+
+```text
+PREDICTED_SCORE
+```
+
+column.
+
+---
+
+## 32.21 Important Reproducibility Note
+
+The project distinguishes between:
+
+**Inference using supplied trained models**
+
+and
+
+**retraining models from available project data**.
+
+The supplied checkpoints represent the final models used for the submitted evaluation. The repository also contains source code for feature generation, splitting, training, evaluation, generalization analysis, and data-efficiency analysis.
+
+The exact supplied evaluation splits and trained checkpoints should be preferred when reproducing the reported benchmark values.
+
+Large artifacts are additionally archived through Zenodo for long-term accessibility.
+
+---
 
 ---
 
@@ -1188,6 +1870,8 @@ for machine-learning approaches to drug-combination activity prediction.
 ---
 
 # 37. Team
+
+**Team Name:** Sanjeevani
 
 | Name | Role |
 |---|---|
