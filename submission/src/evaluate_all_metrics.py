@@ -22,26 +22,25 @@ from scipy.stats import pearsonr, spearmanr
 # PROJECT DIRECTORIES
 # ============================================================
 
-PROJECT_ROOT = os.path.abspath(
+SUBMISSION_ROOT = os.path.abspath(
     os.path.join(
         os.path.dirname(__file__),
-        "..",
         ".."
     )
 )
 
 FEATURES_DIR = os.path.join(
-    PROJECT_ROOT,
+    SUBMISSION_ROOT,
     "features"
 )
 
 MODEL_DIR = os.path.join(
-    PROJECT_ROOT,
-    "models"
+    SUBMISSION_ROOT,
+    "checkpoints"
 )
 
 RESULTS_DIR = os.path.join(
-    PROJECT_ROOT,
+    SUBMISSION_ROOT,
     "results"
 )
 

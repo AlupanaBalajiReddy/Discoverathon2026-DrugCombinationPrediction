@@ -1,8 +1,8 @@
-# Predicting Drug Combination Activity
+# Drug Combination Synergy Prediction Using Machine Learning
 
 ## Discoverathon 2026 Submission
 
-### 1. Project Overview
+## 1. Project Overview
 
 This project addresses the problem of **Predicting Drug Combination Activity** using machine learning.
 
@@ -100,15 +100,74 @@ The unrestricted-depth Extra Trees model produced higher random-split performanc
 
 Processed molecular information is provided under:
 
-```text
-data/processed/
-The processed data includes:
-
-- `drug_descriptors.csv`
-- `drug_smiles.csv`
-- `unique_drugs.csv`
+    data/processed/
+    ├── drug_descriptors.csv
+    ├── drug_smiles.csv
+    └── unique_drugs.csv
 
 Evaluation split files are provided under:
 
-```text
-splits/
+    splits/
+    ├── random/
+    ├── cold_combination/
+    ├── cold_cell_line/
+    └── cold_drug/
+
+The target variable is the experimentally measured synergy score (`SCORE`).
+
+## 7. Generalization Analysis
+
+The random split was used as the reference for evaluating generalization.
+
+| Split | R2 | RMSE | MAE |
+|---|---:|---:|---:|
+| Random | 0.4532 | 9.1981 | 6.2009 |
+| Cold Combination | 0.1735 | 11.3680 | 7.1638 |
+| Cold Cell Line | 0.3052 | 10.9512 | 6.8105 |
+| Cold Drug | 0.0804 | 11.0555 | 7.3559 |
+
+The results demonstrate reduced performance under cold-start conditions, particularly for previously unseen drugs.
+
+## 8. Data-Efficiency Analysis
+
+| Training Data | Samples | RMSE | MAE | R2 |
+|---:|---:|---:|---:|---:|
+| 1% | 22,971 | 12.1800 | 7.7750 | 0.0413 |
+| 5% | 114,857 | 11.1691 | 7.2126 | 0.1938 |
+| 10% | 229,715 | 10.6704 | 6.9535 | 0.2642 |
+| 25% | 574,288 | 10.0917 | 6.6511 | 0.3419 |
+| 100% | 2,297,155 | 9.1981 | 6.2009 | 0.4532 |
+
+Performance improves as the amount of training data increases.
+
+## 9. Prediction
+
+The final random-split Extra Trees model can be used through `src/predict.py`.
+
+Example:
+
+    python src/predict.py input.csv predictions.csv
+
+The pipeline loads the final checkpoint, removes leakage and metadata columns, encodes categorical variables, aligns the feature order, and generates the `PREDICTED_SCORE` column.
+
+## 10. Reproducibility
+
+The submission contains trained checkpoints, processed molecular data, evaluation splits, results, figures, source code, and final predictions.
+
+Source scripts cover feature generation, data splitting, model training, prediction, evaluation, cold-start evaluation, ensemble evaluation, generalization analysis, data-efficiency analysis, and visualization.
+
+All submitted Python source files were syntax-checked successfully using `py_compile`.
+
+## 11. Model Selection
+
+The depth-25 Extra Trees model was selected as a practical trade-off between predictive performance and checkpoint size. The unrestricted-depth model produced stronger random-split performance but substantially larger checkpoints.
+
+An ANN experiment using a 500,000-sample training subset achieved a test R2 of approximately 0.160 and was not selected as the final model.
+
+## 12. AI Assistance and Acknowledgement
+
+AI tools, including ChatGPT, were used during development for code assistance, debugging, documentation, presentation preparation, and clarification of technical concepts.
+
+All data preprocessing, experimental design, model training, evaluation, interpretation of results, and final scientific conclusions were reviewed and validated by the project team.
+
+AI tools were not used as a zero-shot prediction system for the challenge. The submitted predictions were generated using task-specific machine-learning models trained on the challenge data.

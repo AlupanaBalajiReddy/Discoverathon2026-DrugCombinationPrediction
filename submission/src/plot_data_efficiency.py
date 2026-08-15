@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -7,8 +8,10 @@ import matplotlib.pyplot as plt
 # DIRECTORIES
 # ============================================================
 
-RESULTS_DIR = "results"
-FIGURES_DIR = "figures"
+SUBMISSION_ROOT = Path(__file__).resolve().parents[1]
+
+RESULTS_DIR = SUBMISSION_ROOT / "results"
+FIGURES_DIR = SUBMISSION_ROOT / "figures"
 
 os.makedirs(FIGURES_DIR, exist_ok=True)
 

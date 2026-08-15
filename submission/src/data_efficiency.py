@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import gc
 import joblib
@@ -16,9 +17,12 @@ from sklearn.metrics import (
 # DIRECTORIES
 # ============================================================
 
-FEATURES_DIR = "features"
-RESULTS_DIR = "results"
-FIGURES_DIR = "figures"
+SUBMISSION_ROOT = Path(__file__).resolve().parents[1]
+
+FEATURES_DIR = SUBMISSION_ROOT / "features"
+RESULTS_DIR = SUBMISSION_ROOT / "results"
+FIGURES_DIR = SUBMISSION_ROOT / "figures"
+CHECKPOINTS_DIR = SUBMISSION_ROOT / "checkpoints"
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
 os.makedirs(FIGURES_DIR, exist_ok=True)
@@ -403,8 +407,7 @@ print("=" * 70)
 
 
 FINAL_MODEL_PATH = os.path.join(
-    "submission",
-    "checkpoints",
+    CHECKPOINTS_DIR,
     "extra_trees_depth25_random.pkl"
 )
 

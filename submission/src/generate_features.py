@@ -1,11 +1,13 @@
+from pathlib import Path
 import os
 import pandas as pd
 
 
-SPLITS_DIR = "splits"
-OUTPUT_DIR = "features"
+SUBMISSION_ROOT = Path(__file__).resolve().parents[1]
+SPLITS_DIR = SUBMISSION_ROOT / "splits"
+OUTPUT_DIR = SUBMISSION_ROOT / "features"
 
-DESCRIPTOR_FILE = "data/processed/drug_descriptors.csv"
+DESCRIPTOR_FILE = SUBMISSION_ROOT / "data" / "processed" / "drug_descriptors.csv"
 
 
 # ============================================================
