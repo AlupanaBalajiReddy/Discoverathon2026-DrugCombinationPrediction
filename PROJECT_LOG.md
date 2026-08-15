@@ -1,111 +1,37 @@
-# Discoverathon 2026
+# PROJECT LOG
+# Drug Combination Synergy Prediction using Machine Learning
 
-## Problem Statement
+## Project Title
 
-Challenge 1: Predicting Drug Combination Activity
-
-## Team
-
-### Technical Lead
-Your Name
-
-Responsibilities
-- Machine Learning
-- Feature Engineering
-- Model Development
-- Integration
-
-### Research Mentor
-Mentor Name
-
-Responsibilities
-- Scientific Guidance
-- Biological Interpretation
-- Report Review
-
-### Dataset Engineer
-Student 1
-
-Responsibilities
-- Dataset Collection
-- Data Cleaning
-- Exploratory Data Analysis
-
-### Documentation Engineer
-Student 2
-
-Responsibilities
-- Literature Review
-- Report Writing
-- Presentation
-- References
+**Drug Combination Synergy Prediction using Machine Learning**
 
 ---
 
-## Day 1
+# 1. Project Goal
 
-Created project structure.
+The goal of this project is to develop a machine learning pipeline capable of predicting anticancer drug combination synergy scores using molecular descriptors and biological information from the NCI-ALMANAC dataset.
 
-Initialized Git repository.
+The project also evaluates whether the developed models can generalize to previously unseen:
 
-Created GitHub repository.
-
-
-
-# Project Log
+- Drug combinations
+- Cancer cell lines
+- Drugs
 
 ---
 
-## August 05, 2026
+# 2. Dataset Exploration
 
-### Completed
+The NCI-ALMANAC dataset was inspected to understand its structure, variables, missing values, and target distribution.
 
-#### Dataset Exploration
-- Performed exploratory data analysis on the NCI-ALMANAC dataset.
-- Identified missing values and duplicate records.
-- Analyzed the distribution of the synergy score (SCORE).
+Initial dataset statistics:
 
-#### Data Preprocessing
-- Removed single-drug experiments.
-- Removed records with missing SCORE values.
-- Selected relevant columns for modeling.
-- Extracted unique drug identifiers.
+- Raw rows: 3,686,475
+- Raw columns: 29
+- Unique drugs: 105
+- Initial unique drug pairs: 5,460
+- Initial unique cell lines: 61
 
-#### Feature Engineering
-- Downloaded the official NCI SMILES dataset.
-- Merged NSC identifiers with SMILES.
-- Removed compounds with missing or invalid SMILES.
-- Generated molecular descriptors using RDKit.
-- Created descriptors for Drug 1 and Drug 2.
-- Merged descriptors with the experimental dataset.
-- Generated the final feature-engineered dataset.
+The target variable was identified as:
 
-#### Baseline Machine Learning Model
-- Built a Random Forest Regressor.
-- Performed an 80/20 train-test split.
-- Evaluated model performance.
-
-##### Results
-
-| Metric | Value |
-|--------|-------|
-| RMSE | 9.48 |
-| MAE | 6.30 |
-| R² | 0.42 |
-
-#### Version Control
-- Organized the repository.
-- Added Git ignore rules for large files.
-- Committed changes.
-- Pushed the project to the `develop` branch.
-
----
-
-## Next Tasks
-
-- Train Extra Trees Regressor.
-- Train XGBoost Regressor.
-- Train LightGBM Regressor.
-- Compare all models.
-- Select the best-performing model.
-- Perform final analysis.
+```text
+SCORE

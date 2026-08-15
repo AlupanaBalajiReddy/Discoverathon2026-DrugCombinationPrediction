@@ -2,231 +2,102 @@
 
 ## Project Overview
 
-Drug combination therapy has become an important strategy in cancer treatment because combining multiple drugs can improve therapeutic efficacy while reducing toxicity and drug resistance. However, experimentally evaluating all possible drug combinations is expensive and time-consuming.
+This project develops a machine learning pipeline for predicting **anticancer drug combination synergy scores** using the **NCI-ALMANAC** dataset.
 
-This project develops an end-to-end machine learning pipeline to predict **drug combination synergy scores** using molecular descriptors generated from chemical structures. The workflow includes data preprocessing, feature engineering using RDKit, model development, model comparison, and performance evaluation.
+The goal is to learn relationships between:
+
+- Drug molecular properties
+- Drug concentrations
+- Cancer cell lines
+- Cancer panels
+
+and predict the synergy score of drug combinations.
+
+The project combines:
+
+- Large-scale biomedical data processing
+- RDKit molecular descriptor generation
+- Leakage-aware feature engineering
+- Multiple machine learning regression models
+- Cold-start evaluation
+- Feature importance analysis
+- SHAP-based model explainability
+- Comprehensive regression, classification, and ranking evaluation
+- Generalization-gap analysis
+- Data-efficiency analysis
+
+A major focus of the project is determining whether models can generalize beyond drug combinations, cell lines, and drugs observed during training.
 
 ---
 
-## Problem Statement
+# Problem Statement
 
-The objective of this project is to predict the synergy score of drug combinations using molecular descriptors derived from the chemical structures of two drugs.
+Drug combination therapy is an important strategy in cancer treatment. Combining drugs can potentially improve therapeutic efficacy, overcome drug resistance, and enable lower doses of individual drugs.
 
-Accurate prediction of synergistic drug combinations can reduce experimental costs and accelerate drug discovery by prioritizing promising drug pairs for biological validation.
+However, experimentally testing large numbers of possible drug combinations is expensive and time-consuming.
+
+Machine learning can help prioritize potentially effective drug combinations by learning patterns from previously measured experiments.
+
+The objective of this project is to develop machine learning models that predict **drug combination synergy scores** and rigorously evaluate their performance under both conventional and realistic cold-start conditions.
 
 ---
 
-## Dataset
+# Objectives
 
-**Dataset:** NCI-ALMANAC Drug Combination Dataset
+The main objectives of this project are:
 
-The dataset contains experimentally measured responses of anticancer drug combinations tested across multiple cancer cell lines.
+- Explore the NCI-ALMANAC drug combination dataset
+- Clean and preprocess experimental data
+- Generate molecular descriptors using RDKit
+- Integrate molecular and biological features
+- Detect and remove target leakage
+- Create leakage-free train/validation/test splits
+- Evaluate models under random and cold-start settings
+- Compare multiple machine learning algorithms
+- Evaluate regression, classification, and ranking performance
+- Analyze model generalization
+- Investigate the effect of training-data size
+- Identify important predictive features
+- Apply SHAP-based explainability
+- Develop a reproducible machine learning workflow
+
+---
+
+# Dataset
+
+## NCI-ALMANAC
+
+The project uses the **NCI-ALMANAC** drug combination dataset from the National Cancer Institute.
+
+### Raw Dataset
+
+The raw dataset contains:
+
+- **3,686,475 experimental rows**
+- **105 unique drugs**
+- **5,460 initial drug pairs**
+- **61 initial cell lines**
+
+After removing rows with missing synergy scores:
+
+- **2,871,444 valid rows**
+- **5,242 unique drug pairs**
+- **105 unique drugs**
+- **60 cancer cell lines**
 
 ### Target Variable
 
-- Drug Combination Synergy Score
-
----
-
-## Repository Structure
+The prediction target is:
 
 ```text
-Discoverathon2026-DrugCombinationPrediction/
-
-├── data/
-│   ├── raw/
-│   ├── external/
-│   └── processed/
-│
-├── notebooks/
-│   ├── 00_project_setup.ipynb
-│   ├── 01_dataset_exploration.ipynb
-│   ├── 02_data_preprocessing.ipynb
-│   ├── 03_feature_engineering.ipynb
-│   ├── 04_baseline_model.ipynb
-│   ├── 05_model_comparison.ipynb
-│   └── 06_final_analysis.ipynb
-│
-├── src/
-│   └── preprocessing.py
-│
-├── results/
-│   ├── model_comparison.csv
-│   └── random_forest_feature_importance.csv
-│
-├── models/
-│
-├── README.md
-├── PROJECT_LOG.md
-├── requirements.txt
-└── .gitignore
-```
+SCORE
 
 ---
 
-## Installation
+# AI Assistance & Acknowledgement
 
-Clone the repository
+AI tools, including ChatGPT, were used during the development of this project for code assistance, debugging, documentation, presentation preparation, and clarification of technical concepts.
 
-```bash
-git clone https://github.com/AlupanaBalajiReddy/Discoverathon2026-DrugCombinationPrediction.git
+All data preprocessing, experimental design, model training, evaluation, interpretation of results, and final scientific conclusions were reviewed and validated by the project team.
 
-cd Discoverathon2026-DrugCombinationPrediction
-```
-
-Install the required packages
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## Project Workflow
-
-```text
-Raw Dataset
-      │
-      ▼
-Data Cleaning
-      │
-      ▼
-Feature Engineering
-      │
-      ▼
-RDKit Molecular Descriptors
-      │
-      ▼
-Train-Test Split
-      │
-      ▼
-Baseline Random Forest
-      │
-      ▼
-Model Comparison
-      │
-      ▼
-Feature Importance Analysis
-      │
-      ▼
-Final Analysis
-```
-
----
-
-## Running the Project
-
-Execute the notebooks in the following order:
-
-1. 00_project_setup.ipynb
-2. 01_dataset_exploration.ipynb
-3. 02_data_preprocessing.ipynb
-4. 03_feature_engineering.ipynb
-5. 04_baseline_model.ipynb
-6. 05_model_comparison.ipynb
-7. 06_final_analysis.ipynb
-
----
-
-## Machine Learning Models Evaluated
-
-The following regression algorithms were implemented and compared:
-
-- Random Forest Regressor
-- Extra Trees Regressor
-- XGBoost Regressor
-- LightGBM Regressor
-- CatBoost Regressor
-
----
-
-## Performance Metrics
-
-The models were evaluated using:
-
-- Root Mean Squared Error (RMSE)
-- Mean Absolute Error (MAE)
-- Coefficient of Determination (R²)
-
----
-
-## Model Comparison
-
-| Model | RMSE | MAE | R² |
-|------|------:|------:|------:|
-| Random Forest | 10.44 | 6.89 | 0.306 |
-| Extra Trees | 10.56 | 6.99 | 0.289 |
-| XGBoost | 10.83 | 7.15 | 0.252 |
-| CatBoost | 11.14 | 7.28 | 0.209 |
-| LightGBM | 11.18 | 7.28 | 0.203 |
-
----
-
-## Best Performing Model
-
-**Random Forest Regressor** achieved the best overall performance among all evaluated models.
-
-Reasons:
-
-- Lowest RMSE
-- Lowest MAE
-- Highest R² score
-
-Feature importance analysis was performed to identify the molecular descriptors contributing most to prediction performance.
-
----
-
-## Technologies Used
-
-- Python
-- Pandas
-- NumPy
-- RDKit
-- Scikit-learn
-- XGBoost
-- LightGBM
-- CatBoost
-- Matplotlib
-- Jupyter Notebook
-- Git & GitHub
-
----
-
-## Future Work
-
-Potential improvements include:
-
-- Hyperparameter optimization
-- SHAP-based model interpretability
-- Deep learning models
-- Graph Neural Networks (GNNs)
-- Molecular fingerprint-based models
-- External dataset validation
-- Web application deployment using Streamlit
-
----
-
-## References
-
-- NCI-ALMANAC Dataset
-- RDKit Documentation
-- Scikit-learn Documentation
-- XGBoost Documentation
-- LightGBM Documentation
-- CatBoost Documentation
-
----
-
-## Author
-
-**Balaji Reddy**
-
-M.Tech – Medical Biotechnology
-
-Indian Institute of Technology Hyderabad
-
----
-
-## Acknowledgements
-
-This project was developed as part of **Discoverathon 2026**, focusing on machine learning approaches for drug combination synergy prediction.
+AI tools were not used as a zero-shot prediction system for the challenge. The submitted predictions were generated using task-specific machine learning models trained on the challenge data.

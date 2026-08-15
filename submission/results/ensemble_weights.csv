@@ -1,0 +1,6 @@
+Model,Weight
+Random Forest,0.5988090406580092
+Extra Trees,0.401190959341986
+XGBoost,1.5222044971874636e-14
+LightGBM,0.0
+CatBoost,0.0
