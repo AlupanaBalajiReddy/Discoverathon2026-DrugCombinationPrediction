@@ -152,11 +152,50 @@ The pipeline loads the final checkpoint, removes leakage and metadata columns, e
 
 ## 10. Reproducibility
 
-The submission contains trained checkpoints, processed molecular data, evaluation splits, results, figures, source code, and final predictions.
+This section provides the exact instructions required to reproduce the project on an independent Linux or Windows system.
 
-Source scripts cover feature generation, data splitting, model training, prediction, evaluation, cold-start evaluation, ensemble evaluation, generalization analysis, data-efficiency analysis, and visualization.
+The repository contains the source code, processed molecular data, evaluation splits, trained model checkpoints, results and figures required for reproduction.
 
-All submitted Python source files were syntax-checked successfully using `py_compile`.
+There are two reproduction modes:
+
+### A. Reproduce the submitted experiment
+
+This is the recommended approach for verifying the reported results.
+
+Use the supplied:
+
+- Processed molecular descriptor files
+- Train/validation/test split files
+- Trained model checkpoints
+- Source scripts
+- Evaluation result files
+
+The supplied split files should be used when reproducing the reported results because they preserve the exact train/validation/test assignments used during the experiments.
+
+### B. Reproduce the complete pipeline from the raw dataset
+
+The complete pipeline can be regenerated from the NCI-ALMANAC raw dataset by following the preprocessing, split-generation, feature-generation, training, prediction and evaluation workflow described below.
+
+---
+
+### 10.1 Required Software
+
+The project was developed and tested using:
+
+```text
+Python 3.11.15
+pandas==3.0.5
+numpy==2.4.6
+scikit-learn==1.9.0
+rdkit==2026.03.5
+xgboost==3.2.0
+lightgbm==4.7.0
+catboost==1.2.10
+shap==0.51.0
+joblib==1.5.3
+matplotlib==3.11.1
+scipy==1.17.1
+
 
 ## 11. Model Selection
 

@@ -1082,98 +1082,152 @@ A successful command indicates that the compressed archive can be read without a
 
 # 32. Reproduction Workflow
 
-The project supports separate workflows for **using the submitted model**, **reproducing the submitted analysis**, and **training models from available project data**.
+This section provides a complete, reproducible workflow for running the supplied trained model on a new system.
+
+The recommended workflow is to use the **supplied final Extra Trees model** for prediction. The repository also contains the code required to inspect the feature-generation, dataset-splitting, training, and evaluation workflows.
+
+> **Recommended for first-time users:** Follow Sections 32.1–32.8 to run the supplied model and reproduce the example prediction before attempting model retraining.
+
+---
 
 ## 32.1 System Requirements
 
-A Linux-based environment is recommended.
-
-The project uses:
+The prediction workflow requires:
 
 - Python 3.11
 - Git
 - Git LFS
-- Conda or another Python environment manager
+- Conda (recommended) or another Python environment manager
+- Internet access for cloning the repository and retrieving Git LFS objects
 
-The required Python packages are specified in:
+The required Python packages are listed in:
 
 ```text
 requirements.txt
 ```
 
-The repository also contains:
+The repository also contains a submission-specific requirements file:
 
 ```text
 submission/requirements.txt
 ```
 
-for the submission package.
-
 ---
 
 ## 32.2 Clone the Repository
 
-Using SSH:
-
-```bash
-git clone git@github.com:AlupanaBalajiReddy/Discoverathon2026-DrugCombinationPrediction.git
-cd Discoverathon2026-DrugCombinationPrediction
-```
-
-Using HTTPS:
+Clone the repository using HTTPS:
 
 ```bash
 git clone https://github.com/AlupanaBalajiReddy/Discoverathon2026-DrugCombinationPrediction.git
+```
+
+Change into the repository directory:
+
+```bash
+cd Discoverathon2026-DrugCombinationPrediction
+```
+
+If you already have the repository, simply change into the repository directory:
+
+```bash
 cd Discoverathon2026-DrugCombinationPrediction
 ```
 
 ---
 
-## 32.3 Initialize Git LFS
+## 32.3 Initialize and Download Git LFS Files
 
-Install and initialize Git LFS:
+Some trained-model and reproducibility artifacts are stored using Git LFS.
+
+Initialize Git LFS:
 
 ```bash
 git lfs install
 ```
 
-Retrieve the large repository artifacts:
+Download the LFS-managed files:
 
 ```bash
 git lfs pull
 ```
 
-Verify the downloaded LFS objects:
+Verify the LFS files:
 
 ```bash
 git lfs fsck
 ```
 
-The expected result is:
+A successful verification should report:
 
 ```text
 Git LFS fsck OK
+```
+
+If the model checkpoint files appear as small text pointer files instead of binary model files, run:
+
+```bash
+git lfs checkout
 ```
 
 ---
 
 ## 32.4 Create the Python Environment
 
-Using Conda:
+### Using Conda
+
+Create a Python 3.11 environment:
+
+```bash
+conda create -n discoverathon python=3.11 -y
+```
+
+Activate it:
+
+```bash
+conda activate discoverathon
+```
+
+Verify Python:
+
+```bash
+python --version
+```
+
+The expected major/minor version is:
+
+```text
+Python 3.11.x
+```
+
+### Windows
+
+The same Conda commands can be executed from:
+
+- Anaconda Prompt
+- Anaconda PowerShell Prompt
+- PowerShell
+- Command Prompt, if Conda is configured
+
+Example:
 
 ```bash
 conda create -n discoverathon python=3.11 -y
 conda activate discoverathon
 ```
 
-Alternatively, using Python's built-in virtual environment:
+### Alternative: Python virtual environment
+
+If Conda is not available, a standard Python virtual environment can be used.
+
+Linux/macOS:
 
 ```bash
 python3.11 -m venv discoverathon
 source discoverathon/bin/activate
 ```
 
-For Windows:
+Windows:
 
 ```powershell
 py -3.11 -m venv discoverathon
@@ -1184,55 +1238,30 @@ discoverathon\Scripts\activate
 
 ## 32.5 Install Dependencies
 
-From the repository root:
+From the repository root, install the required packages:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Verify the installation:
+Verify the Python and pip installation:
 
 ```bash
 python --version
-pip list
+python -m pip --version
 ```
 
----
-
-## 32.6 Repository Verification
-
-After cloning and installing the environment, verify the important submitted artifacts:
-
-```bash
-ls -lh submission/checkpoints/
-```
-
-The directory should contain:
+If the repository's submission-specific environment is required, the corresponding dependency file is available at:
 
 ```text
-extra_trees_depth25_random.pkl
-extra_trees_depth25_cold_combination.pkl
-extra_trees_depth25_cold_cell_line.pkl
-extra_trees_depth25_cold_drug.pkl
-```
-
-Verify the split files:
-
-```bash
-find submission/splits -type f | sort
-```
-
-Verify the test predictions:
-
-```bash
-ls -lh submission/test_predictions.csv
+submission/requirements.txt
 ```
 
 ---
 
-## 32.7 Using the Supplied Final Model for Prediction
+## 32.6 Verify the Supplied Model
 
-The primary user-facing inference workflow uses the supplied final random-split Extra Trees model:
+The primary prediction model supplied with the repository is:
 
 ```text
 submission/checkpoints/extra_trees_depth25_random.pkl
@@ -1244,57 +1273,167 @@ The prediction script is:
 submission/src/predict.py
 ```
 
-Run:
+Verify that the checkpoint exists.
+
+### Linux/macOS
 
 ```bash
-python submission/src/predict.py my_input.csv my_predictions.csv
-
+ls -lh submission/checkpoints/extra_trees_depth25_random.pkl
 ```
 
-Replace `my_input.csv` and `my_predictions.csv` with the paths to your own input and output CSV files.
+### Windows
 
-For example:
+```powershell
+dir submission\checkpoints\extra_trees_depth25_random.pkl
+```
+
+The prediction script automatically loads this checkpoint.
+
+---
+
+## 32.7 Run the Supplied Model for Prediction
+
+The prediction script accepts:
+
+```text
+python submission/src/predict.py <input.csv> [output.csv]
+```
+
+The first argument is the input CSV.
+
+The optional second argument specifies the output CSV.
+
+### Windows
+
+Example:
+
+```powershell
+python submission\src\predict.py examples\example_input.csv examples\example_predictions.csv
+```
+
+### Linux/macOS
 
 ```bash
-python submission/src/predict.py \
-examples/example_input.csv \
-examples/example_predictions.csv
+python submission/src/predict.py examples/example_input.csv examples/example_predictions.csv
 ```
 
 The script:
 
-1. Loads the supplied Extra Trees checkpoint.
+1. Loads the supplied Extra Trees model.
 2. Reads the input CSV.
-3. Removes target/leakage and metadata columns that must not be used as predictive inputs.
-4. Encodes categorical variables.
+3. Removes target/leakage and metadata columns when present.
+4. Converts categorical variables into numerical features.
 5. Converts feature values to numeric form.
-6. Handles missing feature values.
-7. Aligns the resulting matrix to the exact feature ordering expected by the trained model.
+6. Replaces missing values with zero.
+7. Aligns the feature matrix to the exact feature order expected by the trained model.
 8. Generates predictions.
-9. Writes the predictions to the requested output CSV.
-
-
-**Important: `SCORE` must not be included in the input CSV when generating new predictions.**
-
-`SCORE` is the experimentally measured target variable that the model is trained to predict. The supplied `examples/example_input.csv` demonstrates the required target-free input format. The prediction script generates `PREDICTED_SCORE` as the model output.
+9. Adds the predictions as `PREDICTED_SCORE`.
+10. Writes the resulting CSV file.
 
 The trained random-split model expects **107 input features after preprocessing and feature alignment**.
 
-The output CSV retains the input information and adds:
+---
+
+## 32.8 Verify the Prediction Output
+
+After running the example prediction, verify the output file.
+
+For example:
+
+```text
+examples/example_predictions.csv
+```
+
+Using Python:
+
+```bash
+python -c "import pandas as pd; df=pd.read_csv('examples/example_predictions.csv'); print('Shape:', df.shape); print('Contains SCORE:', 'SCORE' in df.columns); print('Contains PREDICTED_SCORE:', 'PREDICTED_SCORE' in df.columns); print('Predictions:', len(df))"
+```
+
+The output should contain:
+
+```text
+Contains PREDICTED_SCORE: True
+```
+
+and the number of predictions should equal the number of input observations.
+
+For example, a five-row test file should produce:
+
+```text
+Predictions: 5
+```
+
+The prediction output contains the original input information together with:
 
 ```text
 PREDICTED_SCORE
 ```
 
+`SCORE` is the experimental target variable and should not be used as a predictive feature. The prediction pipeline removes `SCORE` and other leakage columns before generating predictions.
+
+---
+## 32.9 Example Reproduction Test
+
+The repository provides a five-row example input file:
+
+```text
+examples/example_input.csv
+
+
+Run:
+
+### Windows
+
+```powershell
+python submission\src\predict.py examples\reproduction_test.csv examples\reproduction_predictions.csv
+```
+
+### Linux/macOS
+
+```bash
+python submission/src/predict.py examples/reproduction_test.csv examples/reproduction_predictions.csv
+```
+
+Verify the result:
+
+```bash
+python -c "import pandas as pd; df=pd.read_csv('examples/reproduction_predictions.csv'); print('Shape:', df.shape); print('Contains SCORE:', 'SCORE' in df.columns); print('Contains PREDICTED_SCORE:', 'PREDICTED_SCORE' in df.columns); print('Predictions:', len(df))"
+```
+
+For the supplied five-observation reproduction test, the expected verification is:
+
+```text
+Shape: (5, 48)
+Contains SCORE: False
+Contains PREDICTED_SCORE: True
+Predictions: 5
+```
+
+This confirms that:
+
+- the input file was read successfully;
+- five observations were processed;
+- the output contains the prediction column;
+- `SCORE` is not included as an input prediction feature.
+
 ---
 
-## 32.8 Input File Requirements for Prediction
+## 32.10 Input File Requirements for Prediction
 
-The prediction input should contain the experimental and molecular features required by the trained model.
+A prediction input must be provided as a CSV file.
 
-The feature representation includes:
+A complete example input is available at:
+
+```text
+examples/example_input.csv
+```
+
+The input should contain the experimental and molecular information required by the trained model.
 
 ### Experimental features
+
+The experimental representation includes:
 
 ```text
 CONCINDEX1
@@ -1342,15 +1481,51 @@ FractionCSP3_2
 MolMR_2
 ```
 
-Additional categorical and numerical columns present in the original experimental representation may also be supplied. The prediction script removes columns that are not required by the trained model and aligns the final matrix to the model's stored feature schema.
+Additional categorical and numerical columns may also be supplied when they are part of the original experimental representation. The prediction pipeline removes columns that are not required by the trained model and aligns the remaining features to the stored model feature schema.
 
-### Important
+---
 
-`SCORE` is the prediction target and must **not** be used as a predictive feature.
+## 32.11 Important: Target and Leakage Columns
 
-If `SCORE` is present in an evaluation input file, the prediction pipeline removes it before generating predictions.
+The model predicts:
 
-The expected prediction output is:
+```text
+SCORE
+```
+
+Therefore, `SCORE` must not be used as a predictive feature for new observations.
+
+The prediction pipeline treats the following as leakage/target-related columns:
+
+```text
+SCORE
+PERCENTGROWTH
+PERCENTGROWTHNOTZ
+TESTVALUE
+CONTROLVALUE
+TZVALUE
+EXPECTEDGROWTH
+```
+
+The following metadata columns are also removed when present:
+
+```text
+SCREENER
+STUDY
+TESTDATE
+PLATE
+PREFIX1
+PREFIX2
+drug_pair_id
+```
+
+For a new prediction dataset, the safest approach is to provide the input in the same target-free format as:
+
+```text
+examples/example_input.csv
+```
+
+The output generated by the prediction script contains:
 
 ```text
 PREDICTED_SCORE
@@ -1358,87 +1533,82 @@ PREDICTED_SCORE
 
 ---
 
-## 32.9 Example Prediction
+## 32.12 Using Your Own Dataset
 
-A small example input is provided under:
+Once the example prediction works, replace the example input with your own CSV file.
+
+For example:
 
 ```text
-examples/example_input.csv
+my_input.csv
 ```
 
 Run:
 
-```bash
-python submission/src/predict.py \
-examples/example_input.csv \
-examples/example_predictions.csv
+### Windows
+
+```powershell
+python submission\src\predict.py my_input.csv my_predictions.csv
 ```
 
-Inspect the output:
+### Linux/macOS
 
 ```bash
-python - <<'PY'
-import pandas as pd
-
-df = pd.read_csv("examples/example_predictions.csv")
-
-print("Output shape:", df.shape)
-print(df.columns.tolist())
-print()
-print(df["PREDICTED_SCORE"])
-PY
+python submission/src/predict.py my_input.csv my_predictions.csv
 ```
 
-The output should contain a `PREDICTED_SCORE` column with one prediction for each input observation.
+If the input file is located in another directory, provide its path:
+
+```powershell
+python submission\src\predict.py data\my_input.csv results\my_predictions.csv
+```
+
+The same command on Linux/macOS is:
+
+```bash
+python submission/src/predict.py data/my_input.csv results/my_predictions.csv
+```
+
+The output file will contain the input observations together with:
+
+```text
+PREDICTED_SCORE
+```
 
 ---
 
-## 32.10 Molecular Descriptor Generation
+## 32.13 Feature Alignment and Missing Values
 
-Molecular descriptors are generated separately from the final prediction script.
+The prediction script automatically performs the preprocessing required by the supplied trained model.
 
-The project uses **RDKit** to calculate molecular descriptors for the drugs.
+Categorical variables are one-hot encoded.
 
-The processed molecular information is stored under:
+Numerical conversion is applied to the resulting feature matrix.
 
-```text
-data/processed/
+Missing values are replaced with zero.
+
+Finally, the feature matrix is reindexed using the exact feature names stored in the trained model:
+
+```python
+X = X.reindex(
+    columns=model.feature_names_in_,
+    fill_value=0
+)
 ```
 
-and the submission package contains the processed molecular information under:
+This ensures that the prediction matrix follows the feature ordering used during model training.
 
-```text
-submission/data/processed/
-```
+The model therefore does not require the input CSV to have the exact same column ordering as the stored model features.
 
-The feature-generation workflow uses:
-
-```text
-submission/src/generate_features.py
-```
-
-The molecular descriptor representation includes properties such as:
-
-```text
-MolWt
-ExactMolWt
-MolLogP
-TPSA
-NumHDonors
-NumHAcceptors
-NumRotatableBonds
-HeavyAtomCount
-RingCount
-NumAromaticRings
-FractionCSP3
-MolMR
-```
-
-Separate descriptor sets are constructed for Drug 1 and Drug 2.
+However, the input should still contain the biological/experimental information represented by the example input format.
 
 ---
 
-## 32.11 Generate Dataset Splits
+## 32.14 Model Training and Evaluation
+
+The repository also contains the workflows used to generate dataset splits, features, train models, and evaluate performance.
+
+### Dataset splitting
 
 The split-generation workflow is implemented in:
 
@@ -1446,7 +1616,7 @@ The split-generation workflow is implemented in:
 submission/src/generate_splits.py
 ```
 
-The project evaluates four experimental settings:
+The project evaluates:
 
 ```text
 random
@@ -1455,17 +1625,15 @@ cold_cell_line
 cold_drug
 ```
 
-The supplied submission already contains the final split files under:
+The supplied split files are available under:
 
 ```text
 submission/splits/
 ```
 
-These supplied splits should be used when reproducing the reported test results because they preserve the exact evaluation partitions used for the submitted analysis.
+These supplied splits should be used when reproducing the reported evaluation results because they preserve the evaluation partitions used for the submitted analysis.
 
----
-
-## 32.12 Feature Generation
+### Feature generation
 
 Feature generation is implemented in:
 
@@ -1481,27 +1649,15 @@ The workflow combines:
 - Cancer-panel information
 - Cancer cell-line information
 
-The generated feature matrices are used by the model-training and evaluation workflows.
+### Model training
 
----
-
-## 32.13 Model Training
-
-The repository contains training code under:
+The training workflow is implemented in:
 
 ```text
 submission/src/train_all_splits.py
 ```
 
-The training workflow can be used to inspect and reproduce the model-training procedure implemented in the project.
-
-The final submitted Extra Trees checkpoints, however, are already provided separately under:
-
-```text
-submission/checkpoints/
-```
-
-The final Extra Trees configuration is:
+The supplied final model used for the primary prediction workflow is an Extra Trees regressor with:
 
 ```text
 Model: ExtraTreesRegressor
@@ -1512,31 +1668,21 @@ max_features: 1.0
 random_state: 42
 ```
 
-The final random-split checkpoint is:
+The primary supplied random-split checkpoint is:
 
 ```text
 submission/checkpoints/extra_trees_depth25_random.pkl
 ```
 
-The cold-start checkpoints are:
+### Evaluation
 
-```text
-submission/checkpoints/extra_trees_depth25_cold_combination.pkl
-submission/checkpoints/extra_trees_depth25_cold_cell_line.pkl
-submission/checkpoints/extra_trees_depth25_cold_drug.pkl
-```
-
----
-
-## 32.14 Evaluation
-
-Comprehensive evaluation is implemented in:
+The comprehensive evaluation workflow is implemented in:
 
 ```text
 submission/src/evaluate_all_metrics.py
 ```
 
-The project evaluates the regression task using:
+The regression evaluation includes:
 
 ```text
 MAE
@@ -1561,13 +1707,6 @@ nDCG@100
 Enrichment@100
 ```
 
-The supplied evaluation results are available under:
-
-```text
-submission/results/
-```
-
----
 
 ## 32.15 Cold-Start Evaluation
 
